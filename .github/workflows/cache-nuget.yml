@@ -23,7 +23,7 @@ jobs:
           dir nuget-packages\Newtonsoft.Json*
 
       - name: Upload NuGet packages as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@3.0
         with:
           name: nuget-cache
           path: nuget-packages
