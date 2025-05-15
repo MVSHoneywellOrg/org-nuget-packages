@@ -1,0 +1,23 @@
+name: Cache NuGet Packages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cache-nuget:
+    runs-on: windows-latest
+
+    steps:
+      - name: Set up NuGet directory
+        run: |
+          mkdir -p .nuget/packages
+
+      - name: Restore packages
+        run: |
+          nuget install Newtonsoft.Json -OutputDirectory .nuget/packages
+
+      - name: Upload NuGet packages as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuget-cache
+          path: .nuget/packages
