@@ -1,23 +1,29 @@
 name: Cache NuGet Packages
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
-  cache-nuget:
+  build:
     runs-on: windows-latest
 
     steps:
-      - name: Set up NuGet directory
-        run: |
-          mkdir -p .nuget/packages
+      - name: Set up NuGet CLI (built-in on Windows)
+        run: nuget help
 
-      - name: Restore packages
+      - name: Create packages directory
+        run: mkdir nuget-packages
+
+      - name: Install NuGet package (e.g., Newtonsoft.Json)
+        run: nuget install Newtonsoft.Json -OutputDirectory nuget-packages
+
+      - name: Check output
         run: |
-          nuget install Newtonsoft.Json -OutputDirectory .nuget/packages
+          dir nuget-packages
+          dir nuget-packages\Newtonsoft.Json*
 
       - name: Upload NuGet packages as artifact
         uses: actions/upload-artifact@v3
         with:
           name: nuget-cache
-          path: .nuget/packages
+          path: nuget-packages
