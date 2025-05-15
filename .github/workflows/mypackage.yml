@@ -1,0 +1,20 @@
+name: MyPackage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-artifact:
+    runs-on: windows-latest
+
+    steps:
+      - name: Create a test file
+        run: |
+          mkdir my-artifacts
+          echo "Hello from GitHub Actions!" > my-artifacts/hello.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-test-artifact
+          path: my-artifacts
