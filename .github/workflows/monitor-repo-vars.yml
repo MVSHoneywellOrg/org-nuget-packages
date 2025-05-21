@@ -43,9 +43,13 @@ jobs:
       - name: Read diff content
         id: diff_content
         run: |
-          echo "diff<<EOF" >> $GITHUB_OUTPUT
-          cat changes.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          if [ -s changes.txt ]; then
+            echo "diff<<EOF" >> $GITHUB_OUTPUT
+            cat changes.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "diff=No changes detected" >> $GITHUB_OUTPUT
+          fi
 
       - name: Get latest audit log for variable changes
         if: steps.compare.outputs.changes == 'true'
