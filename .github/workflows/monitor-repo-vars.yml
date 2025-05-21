@@ -56,13 +56,22 @@ jobs:
         id: audit
         run: |
           ORG=$(echo "${{ github.repository }}" | cut -d'/' -f1)
-          curl -s -H "Authorization: Bearer ${{ secrets.AUDIT_LOG_TOKEN }}" \
-               "https://api.github.com/orgs/$ORG/audit-log?phrase=actions_variable&per_page=5" \
-            | jq -r '[.[] | {actor: .actor, action: .action, time: .created_at}] | sort_by(.time) | reverse | .[0]' > actor.json
-          
-          echo "ACTOR=$(jq -r .actor actor.json)" >> $GITHUB_ENV
-          echo "ACTION=$(jq -r .action actor.json)" >> $GITHUB_ENV
-          echo "TIME=$(jq -r .time actor.json)" >> $GITHUB_ENV
+      
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.AUDIT_LOG_TOKEN }}" \
+            "https://api.github.com/orgs/$ORG/audit-log?phrase=actions_variable&per_page=5")
+      
+          echo "$RESPONSE" > actor.json
+      
+          if jq -e 'type=="array"' actor.json > /dev/null; then
+            echo "ACTOR=$(jq -r 'sort_by(.created_at) | reverse | .[0].actor' actor.json)" >> $GITHUB_ENV
+            echo "ACTION=$(jq -r 'sort_by(.created_at) | reverse | .[0].action' actor.json)" >> $GITHUB_ENV
+            echo "TIME=$(jq -r 'sort_by(.created_at) | reverse | .[0].created_at' actor.json)" >> $GITHUB_ENV
+          else
+            echo "Failed to parse actor.json as array. Raw content:"
+            cat actor.json
+            exit 1
+          fi
+
 
       - name: Send email if changes detected
         if: steps.compare.outputs.changes == 'true'
