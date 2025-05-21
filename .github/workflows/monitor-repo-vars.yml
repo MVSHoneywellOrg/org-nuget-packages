@@ -30,48 +30,13 @@ jobs:
       - name: Compare with previous vars
         id: compare
         run: |
-          DIFF=$(diff previous-vars.json current-vars.json || true)
+          DIFF=$(diff -q previous-vars.json current-vars.json || true)
           if [ -n "$DIFF" ]; then
             echo "changes=true" >> $GITHUB_OUTPUT
             echo "$DIFF" > changes.txt
           else
             echo "changes=false" >> $GITHUB_OUTPUT
-            echo "" > changes.txt
           fi
-    
-
-      - name: Read diff content
-        id: diff_content
-        run: |
-          if [ -s changes.txt ]; then
-            echo "diff<<EOF" >> $GITHUB_OUTPUT
-            cat changes.txt >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "diff=No changes detected" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get latest audit log for variable changes
-        if: steps.compare.outputs.changes == 'true'
-        id: audit
-        run: |
-          ORG=$(echo "${{ github.repository }}" | cut -d'/' -f1)
-      
-          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.AUDIT_LOG_TOKEN }}" \
-            "https://api.github.com/orgs/$ORG/audit-log?phrase=actions_variable&per_page=5")
-      
-          echo "$RESPONSE" > actor.json
-      
-          if jq -e 'type=="array"' actor.json > /dev/null; then
-            echo "ACTOR=$(jq -r 'sort_by(.created_at) | reverse | .[0].actor' actor.json)" >> $GITHUB_ENV
-            echo "ACTION=$(jq -r 'sort_by(.created_at) | reverse | .[0].action' actor.json)" >> $GITHUB_ENV
-            echo "TIME=$(jq -r 'sort_by(.created_at) | reverse | .[0].created_at' actor.json)" >> $GITHUB_ENV
-          else
-            echo "Failed to parse actor.json as array. Raw content:"
-            cat actor.json
-            exit 1
-          fi
-
 
       - name: Send email if changes detected
         if: steps.compare.outputs.changes == 'true'
@@ -83,16 +48,9 @@ jobs:
           password: ${{ secrets.GMAIL_APP_PASSWORD }}
           subject: GitHub Repo Variable Changed - ${{ github.repository }}
           body: |
-            GitHub Action detected a change in repository variables or settings.
-
-            Repository: ${{ github.repository }}
-            Actor: ${{ env.ACTOR }}
-            Action: ${{ env.ACTION }}
-            Time: ${{ env.TIME }}
-
-            Detected diff:
-            ${{ steps.diff_content.outputs.diff }}
-
+            GitHub Action detected a change in repository variables or settings for ${{ github.repository }}.
+            Changes:
+            ${{ steps.compare.outputs.changes }}
           to: ${{ secrets.GMAIL_USERNAME }}
           from: GitHub Monitor <${{ secrets.GMAIL_USERNAME }}>
 
