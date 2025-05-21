@@ -38,6 +38,13 @@ jobs:
             echo "changes=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Read diff content
+        id: diff_content
+        run: |
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          cat changes.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Get latest audit log for variable changes
         if: steps.compare.outputs.changes == 'true'
         id: audit
@@ -69,7 +76,7 @@ jobs:
             Time: ${{ env.TIME }}
 
             Detected diff:
-            $(cat changes.txt)
+            ${{ steps.diff_content.outputs.diff }}
 
           to: ${{ secrets.GMAIL_USERNAME }}
           from: GitHub Monitor <${{ secrets.GMAIL_USERNAME }}>
